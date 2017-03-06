@@ -1,0 +1,21 @@
+table
+
+项目现定名			house_name
+项目暂定名			temp_name
+预销售许可证号		presell_licence
+预销售批准机关		presell_approval
+开发商				house_developer
+合作方				partner
+坐落					location
+行政区				admin_region
+立项批文				approval
+规划许可证号			plan_licence
+土地证号				land_licence
+施工许可证号			construct_licence
+预售总面积			presell_area
+代销公司				sell_company
+电话					sell_tel
+项目销售地点			sell_address
+销售电话				telephone
+物业公司				tenement
+总套数				total_house_num
