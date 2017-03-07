@@ -16,7 +16,11 @@ public class ActiveMQConsumer implements MessageConsumer {
     @Autowired
     private Spider spider;
 
-    @JmsListener(destination = "house-url", concurrency="5")
+    /**
+     * 设置消费者，并发线程数为10
+     * @param obj
+     */
+    @JmsListener(destination = "house-url", concurrency="10")
     public void receive(Object obj) {
         if (obj instanceof ActiveMQTextMessage) {
             ActiveMQTextMessage message = (ActiveMQTextMessage)obj;

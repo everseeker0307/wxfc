@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,33 +43,39 @@ public class Spider {
 
     private static String indexPage = "http://www.wxhouse.com:9097/wwzs/getzxlpxx.action";
     private AtomicInteger currentPageNo = new AtomicInteger(1);
-    private int totalPageCount = 0;
+    private int totalPageCount = 0;          //总页数
     private static final int pageSize = 15;  //每页显示数据
+    private static final int spiderThreadNum = 3;
 
-    @Scheduled(cron = "0 06 10 * * *")
+    @Scheduled(cron = "50 19 09 * * *")
     public void startSpider() {
         long start = System.currentTimeMillis();
         logger.info("spider start...");
+        //获得总页数
         getTotalPageNum(indexPage);
-        if (totalPageCount > 0) {
-            ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(10);
-//            ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool();
+        //设置爬取页面数据的线程池
+        ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(spiderThreadNum);
+        //设置countDownLatch，主要用于判断线程池中的线程是否都已执行完毕
+        final CountDownLatch countDownLatch = new CountDownLatch(spiderThreadNum);
+        for (int i = 0; i < spiderThreadNum; i++) {
             threadPoolExecutor.execute(new Runnable() {
                 @Override
                 public void run() {
                     int cpn;
-                    while ((cpn = currentPageNo.getAndIncrement()) <= totalPageCount)
+                    while ((cpn = currentPageNo.get()) <= totalPageCount) {
                         postPage(indexPage, cpn);
+                        currentPageNo.incrementAndGet();
+                    }
+                    countDownLatch.countDown();
                 }
             });
-            while (threadPoolExecutor.getActiveCount() > 0) {
-                logger.info("current work thread's num: " + threadPoolExecutor.getActiveCount());
-                try {
-                    Thread.sleep(10000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
+        }
+        //等待线程池中所有线程都执行完毕后，关闭所有线程
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
             threadPoolExecutor.shutdown();
         }
         logger.info("spider end! It costs time: " + (System.currentTimeMillis() - start)/ 1000 + "s");
