@@ -2,16 +2,17 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/wxfc?characterEncoding=utf8&useSSL=false
     username: root
-    password: 333
+    password: Weiyang#0
     driver-class-name: com.mysql.jdbc.Driver
     type: com.zaxxer.hikari.HikariDataSource
-  activemq:
-    in-memory: true
-    user: admin
-    password: admin
+#  activemq:
+#    in-memory: true
+#    user: admin
+#    password: admin
 
 logging:
-  path: /Users/everseeker/Log/wxfc
+#  path: /Users/everseeker/Log/wxfc
+  path: /home/wxfc/log
   level:
     root: INFO
     org.springframework.web: INFO

@@ -1,6 +1,7 @@
 package com.everseeker.mq;
 
 import com.everseeker.spider.Spider;
+import com.everseeker.utils.TimeUtil;
 import org.apache.activemq.command.ActiveMQTextMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
@@ -26,6 +27,7 @@ public class ActiveMQConsumer implements MessageConsumer {
             ActiveMQTextMessage message = (ActiveMQTextMessage)obj;
             try {
                 spider.getDetailPageAndSave(message.getText());
+                TimeUtil.sleep(50);
             } catch (JMSException e) {
                 e.printStackTrace();
             }

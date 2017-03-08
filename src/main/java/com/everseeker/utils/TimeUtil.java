@@ -13,4 +13,12 @@ public class TimeUtil {
         df.setTimeZone(TimeZone.getTimeZone("GMT+8"));      //设置为东八区
         return df.format(date);
     }
+
+    public static void sleep(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
 }

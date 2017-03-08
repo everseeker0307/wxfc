@@ -47,12 +47,13 @@ public class Spider {
     private static final int pageSize = 15;  //每页显示数据
     private static final int spiderThreadNum = 3;
 
-    @Scheduled(cron = "50 19 09 * * *")
+//    @Scheduled(cron = "0 18 2/10 * * *")
+    @Scheduled(cron = "0 48 13 * * *")
     public void startSpider() {
         long start = System.currentTimeMillis();
         logger.info("spider start...");
         //获得总页数
-        getTotalPageNum(indexPage);
+        totalPageCount = getTotalPageNum(indexPage);
         //设置爬取页面数据的线程池
         ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(spiderThreadNum);
         //设置countDownLatch，主要用于判断线程池中的线程是否都已执行完毕
@@ -65,6 +66,7 @@ public class Spider {
                     while ((cpn = currentPageNo.get()) <= totalPageCount) {
                         postPage(indexPage, cpn);
                         currentPageNo.incrementAndGet();
+                        TimeUtil.sleep(500);
                     }
                     countDownLatch.countDown();
                 }
@@ -81,48 +83,68 @@ public class Spider {
         logger.info("spider end! It costs time: " + (System.currentTimeMillis() - start)/ 1000 + "s");
     }
 
-    public void getTotalPageNum(String url) {
-        try {
-            Document doc = Jsoup.connect(url)
-                                .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36")
-                                .get();
-            Element pagination = doc.getElementById("pagination").parent();
-            Elements inputs = pagination.getElementsByTag("input");
-            for(Element input : inputs) {
-                if (input.attr("id").equals("totalPageCount"))
-                    totalPageCount = Integer.valueOf(input.attr("value"));
+    public int getTotalPageNum(String url) {
+        int reconnection = 0;
+        while (true) {
+            try {
+                Document doc = Jsoup.connect(url)
+                        .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36")
+                        .get();
+                Element pagination = doc.getElementById("pagination").parent();
+                Elements inputs = pagination.getElementsByTag("input");
+                for (Element input : inputs) {
+                    if (input.attr("id").equals("totalPageCount"))
+                        return Integer.valueOf(input.attr("value"));
+                }
+            } catch (IOException e) {
+                reconnection++;
+                logger.warn("invoke method getTotalPageNum error, url is: " + url);
+                logger.warn(e.toString());
+                TimeUtil.sleep((reconnection < 100) ? 6000 : 600000);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
     public void postPage(String url, int currentPage) {
-        try {
-            Document doc = Jsoup.connect(url)
-                    .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36")
-                    .data("page.pageSize", String.valueOf(pageSize))
-                    .data("page.currentPageNo", String.valueOf(currentPage))
-                    .post();
-            analysisDocumentGainLinks(doc);
-        } catch (IOException e) {
-            e.printStackTrace();
+        int reconnection = 0;
+        while (true) {
+            try {
+                Document doc = Jsoup.connect(url)
+                        .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36")
+                        .data("page.pageSize", String.valueOf(pageSize))
+                        .data("page.currentPageNo", String.valueOf(currentPage))
+                        .post();
+                analysisDocumentGainLinks(doc);
+                return;
+            } catch (IOException e) {
+                reconnection++;
+                logger.warn("invoke method postPage error, url is: " + url + ", currentPage is: " + currentPage);
+                logger.warn(e.toString());
+                TimeUtil.sleep((reconnection < 100) ? 6000 : 600000);
+            }
         }
     }
 
     public void getDetailPageAndSave(String url) {
-        try {
-            Document doc = Jsoup.connect(url)
-                    .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36")
-                    .get();
-            Elements elements = doc.select("table.searchdiv");
-            String urlId = url.substring(url.indexOf("=")+1);
-            if (houseInfoService.getHouseInfoByHouseUrlId(urlId) == null) {
-                houseInfoService.addHouseInfo(analysisDocumentGainHouseInfo(elements, urlId));
+        int reconnection = 0;
+        while (true) {
+            try {
+                Document doc = Jsoup.connect(url)
+                        .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36")
+                        .get();
+                Elements elements = doc.select("table.searchdiv");
+                String urlId = url.substring(url.indexOf("=") + 1);
+                if (houseInfoService.getHouseInfoByHouseUrlId(urlId) == null) {
+                    houseInfoService.addHouseInfo(analysisDocumentGainHouseInfo(elements, urlId));
+                }
+                houseStockService.addHouseStock(analysisDocumentGainHouseStock(elements, urlId));
+                return;
+            } catch (IOException e) {
+                reconnection++;
+                logger.warn("invoke method getDetailPageAndSave error, url is: " + url);
+                logger.warn(e.toString());
+                TimeUtil.sleep((reconnection < 10) ? 6000 : 60000);
             }
-            houseStockService.addHouseStock(analysisDocumentGainHouseStock(elements, urlId));
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
