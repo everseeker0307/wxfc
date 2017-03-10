@@ -24,4 +24,8 @@ public class HouseInfoService {
     public HouseInfo getHouseInfoByHouseUrlId(String houseUrlId) {
         return houseinfoMapper.getHouseInfoByHouseUrlId(houseUrlId);
     }
+
+    public int getTotalHouseNum(String recordDate) {
+        return houseinfoMapper.getTotalHouseNum(recordDate);
+    }
 }

@@ -18,7 +18,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -47,13 +49,16 @@ public class Spider {
     private static final int pageSize = 15;  //每页显示数据
     private static final int spiderThreadNum = 3;
 
-//    @Scheduled(cron = "0 18 2/10 * * *")
-    @Scheduled(cron = "0 48 13 * * *")
+    @Scheduled(cron = "07 12 3/18 * * *")
+//    @Scheduled(cron = "50 58 8 * * *")
     public void startSpider() {
         long start = System.currentTimeMillis();
         logger.info("spider start...");
         //获得总页数
         totalPageCount = getTotalPageNum(indexPage);
+        //初始化当前页面为1
+        currentPageNo.set(1);
+
         //设置爬取页面数据的线程池
         ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(spiderThreadNum);
         //设置countDownLatch，主要用于判断线程池中的线程是否都已执行完毕
@@ -63,9 +68,8 @@ public class Spider {
                 @Override
                 public void run() {
                     int cpn;
-                    while ((cpn = currentPageNo.get()) <= totalPageCount) {
+                    while ((cpn = currentPageNo.getAndIncrement()) <= totalPageCount) {
                         postPage(indexPage, cpn);
-                        currentPageNo.incrementAndGet();
                         TimeUtil.sleep(500);
                     }
                     countDownLatch.countDown();
@@ -80,6 +84,9 @@ public class Spider {
         } finally {
             threadPoolExecutor.shutdown();
         }
+        TimeUtil.sleep(10000);
+        //检查是否有遗漏
+        checkSpiderResult(TimeUtil.getBeijingDate(new Date()));
         logger.info("spider end! It costs time: " + (System.currentTimeMillis() - start)/ 1000 + "s");
     }
 
@@ -96,11 +103,12 @@ public class Spider {
                     if (input.attr("id").equals("totalPageCount"))
                         return Integer.valueOf(input.attr("value"));
                 }
-            } catch (IOException e) {
-                reconnection++;
-                logger.warn("invoke method getTotalPageNum error, url is: " + url);
-                logger.warn(e.toString());
+            } catch (SocketTimeoutException socketTimeoutException) {
+                logger.warn(socketTimeoutException.toString() + ".    Invoke method getTotalPageNum error, url is: " + url + ", recon = " + (++reconnection));
                 TimeUtil.sleep((reconnection < 100) ? 6000 : 600000);
+            } catch (IOException e) {
+                logger.error(e.toString() + ",  url=" + url);
+                TimeUtil.sleep(600000);
             }
         }
     }
@@ -116,11 +124,12 @@ public class Spider {
                         .post();
                 analysisDocumentGainLinks(doc);
                 return;
-            } catch (IOException e) {
-                reconnection++;
-                logger.warn("invoke method postPage error, url is: " + url + ", currentPage is: " + currentPage);
-                logger.warn(e.toString());
+            } catch (SocketTimeoutException socketTimeoutException) {
+                logger.warn(socketTimeoutException.toString() + ".    invoke method postPage error, url is: " + url + ", currentPage is: " + currentPage + ", recon = " + (++reconnection));
                 TimeUtil.sleep((reconnection < 100) ? 6000 : 600000);
+            } catch (IOException e) {
+                logger.error(e.toString() + ",  page=" + currentPage);
+                TimeUtil.sleep(60000);
             }
         }
     }
@@ -139,11 +148,12 @@ public class Spider {
                 }
                 houseStockService.addHouseStock(analysisDocumentGainHouseStock(elements, urlId));
                 return;
-            } catch (IOException e) {
-                reconnection++;
-                logger.warn("invoke method getDetailPageAndSave error, url is: " + url);
-                logger.warn(e.toString());
+            } catch (SocketTimeoutException socketTimeoutException) {
+                logger.warn(socketTimeoutException.toString() + ".    invoke method getDetailPageAndSave error, url is: " + url + ", recon = " + (++reconnection));
                 TimeUtil.sleep((reconnection < 10) ? 6000 : 60000);
+            } catch (IOException e) {
+                logger.warn(e.toString() + ",  url=" + url);
+                TimeUtil.sleep(60000);
             }
         }
     }
@@ -201,5 +211,20 @@ public class Spider {
 
     private static String getTdText(Element element) {
         return element.select("td").last().html().replace("&nbsp;", "").trim();
+    }
+
+    public void checkSpiderResult(String recordDate) {
+        String today = TimeUtil.getBeijingDate(new Date());
+        int totalHouseNum = houseInfoService.getTotalHouseNum(today);
+        int recordHouseNum = houseStockService.getRecordNumByDate(today);
+        if (recordHouseNum < totalHouseNum) {
+            List<String> list = houseStockService.getMissedHouseUrlId(recordDate);
+            StringBuffer urlIds = new StringBuffer();
+            for (String urlId : list) {
+                urlIds.append(urlId + ", ");
+                messageProducer.send("http://www.wxhouse.com:9097/wwzs/queryLpxxInfo.action?tplLpxx.id=" + urlId);
+            }
+            logger.info("the missed urls are: " + urlIds.toString() + " already save to table housestock.");
+        }
     }
 }

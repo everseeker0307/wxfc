@@ -2,6 +2,9 @@ package com.everseeker.mapper;
 
 import com.everseeker.entity.HouseStock;
 import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Select;
+
+import java.util.List;
 
 /**
  * Created by everseeker on 2017/3/3.
@@ -16,4 +19,10 @@ public interface HouseStockMapper {
             "ON DUPLICATE KEY UPDATE totalHouseNum = #{totalHouseNum}, forsaleHouseNum = #{forsaleHouseNum}, saledHouseNum = " +
             "#{saledHouseNum}, limitedHouseNum = #{limitedHouseNum}")
     void addHouseStock(HouseStock houseStock);
+
+    @Select("SELECT COUNT(*) FROM housestock WHERE recordDate = #{recordDate}")
+    int getRecordNumByDate(String recordDate);
+
+    @Select("select houseUrlId from houseinfo where createDate <= #{recordDate} and houseUrlId not in (select houseUrlId from housestock where recordDate = #{recordDate})")
+    List<String> getMissedHouseUrlId(String recordDate);
 }

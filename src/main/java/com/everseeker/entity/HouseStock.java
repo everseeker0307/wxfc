@@ -1,9 +1,11 @@
 package com.everseeker.entity;
 
+import java.io.Serializable;
+
 /**
  * Created by everseeker on 2017/3/2.
  */
-public class HouseStock {
+public class HouseStock implements Serializable {
     private int id;
     private String houseUrlId;
     private int totalHouseNum;

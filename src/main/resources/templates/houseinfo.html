@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <table>
+        <!--/*@thymesVar id="houseInfo" type="com.everseeker.entity.HouseInfo"*/-->
+        <tr>
+            <td th:text="${houseInfo.houseUrlId}">urlId</td>
+            <td th:text="${houseInfo.houseName}">楼盘名</td>
+            <td th:text="${houseInfo.totalHouseNum}">总套数</td>
+            <td th:text="${houseInfo.adminRegion}">区域</td>
+        </tr>
+    </table>
+</body>
+</html>

@@ -18,4 +18,7 @@ public interface HouseInfoMapper {
 
     @Select("SELECT * from houseinfo WHERE houseUrlId = #{houseUrlId}")
     HouseInfo getHouseInfoByHouseUrlId(@Param("houseUrlId") String houseUrlId);
+
+    @Select("SELECT COUNT(*) FROM houseinfo where createDate <= #{recordDate}")
+    int getTotalHouseNum(String recordDate);
 }
