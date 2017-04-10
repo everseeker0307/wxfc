@@ -6,7 +6,7 @@ import java.io.Serializable;
  * Created by everseeker on 2017/3/2.
  */
 public class HouseStock implements Serializable {
-    private int id;
+    private long id;
     private String houseUrlId;
     private int totalHouseNum;
     private int forsaleHouseNum;
@@ -14,11 +14,11 @@ public class HouseStock implements Serializable {
     private int limitedHouseNum;
     private String recordDate;
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 

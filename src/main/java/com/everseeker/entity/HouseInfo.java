@@ -6,7 +6,7 @@ import java.io.Serializable;
  * Created by everseeker on 2017/3/2.
  */
 public class HouseInfo implements Serializable {
-    private int id;
+    private long id;
     private String houseUrlId;         //楼盘页面网址
     private String houseName;          //项目现定名
     private String tempName;           //项目暂定名
@@ -30,11 +30,11 @@ public class HouseInfo implements Serializable {
     private int totalHouseNum;         //总套数
     private String createDate;
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 
