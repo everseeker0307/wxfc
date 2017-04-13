@@ -87,6 +87,11 @@ public interface HouseStockMapper {
     @Select("select sum(forsaleHouseNum) from housestock where recordDate=#{givenday}")
     Long getForsaleHouseNumSum(String givenday);
 
-    @Select("select sum(saledHouseNum from housestock where recordDate=#{givenday}")
+    /**
+     * 返回givenday那天已经售出的总量
+     * @param givenday
+     * @return
+     */
+    @Select("select sum(saledHouseNum) from housestock where recordDate=#{givenday}")
     Long getSaledHouseNumSum(String givenday);
 }

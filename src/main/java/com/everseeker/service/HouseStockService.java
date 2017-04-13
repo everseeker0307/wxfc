@@ -6,6 +6,7 @@ import com.everseeker.utils.TimeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.sql.Time;
 import java.util.*;
 
 /**
@@ -13,7 +14,11 @@ import java.util.*;
  */
 @Service
 public class HouseStockService {
-    private static final String originDay = "20170307";
+    private static final String originDay = "20170308";
+
+    private static final int DAILY = 1;
+    private static final int WEEKLY = 7;
+    private static final int MONTHLY = 30;
 
     @Autowired
     private HouseStockMapper houseStockMapper;
@@ -46,7 +51,7 @@ public class HouseStockService {
     public List<?> getTodayDealDetails(String today) {
         System.out.println("service: getTodayDealDetails");
         System.out.println("today = " + today);
-        String yesterday = TimeUtil.beforeGivenDay(today, 1);
+        String yesterday = TimeUtil.beforeGivenday(today, 1);
         return getPeriodDealDetails(yesterday, today);
     }
 
@@ -80,26 +85,44 @@ public class HouseStockService {
     }
 
     /**
-     * 返回从startDay(不含)到endDay(含)期间的每日成交量
+     * 返回从startDay(不含)到endDay(含)期间的成交量
      * @param startDay
      * @param endDay
+     * @Param interval: 表示时间间隔，1: 每日统计; 7: 每周统计; 30: 每月统计
      * @return
      */
-    public Map<String, Long> getDailySaledHouseNumSum(String startDay, String endDay) {
+    public List<?> getIntervalSaledHouseNumSum(String startDay, String endDay, int interval) {
+        // 处理日期时间
         if (startDay.compareTo(originDay) < 0)
             startDay = originDay;
         if (endDay.compareTo(TimeUtil.getBeijingDate(new Date())) > 0)
             endDay = TimeUtil.getBeijingDate(new Date());
-        Map<String, Long> map = new HashMap<>();
+        if (interval == HouseStockService.WEEKLY) {
+            startDay = TimeUtil.firstDayBeforeGivenday(startDay, -1);
+            endDay = TimeUtil.firstDayBeforeGivenday(endDay, 1);
+        } else if (interval == HouseStockService.MONTHLY) {
+            startDay = TimeUtil.monthTailBeforeGivenday(startDay, 0);
+            endDay = TimeUtil.monthTailBeforeGivenday(endDay, 1);
+        }
+
+        // 根据日期查询数据库并返回
+        List<Map<String, Object>> list = new ArrayList<>();
         String iday = startDay;
         long yesNum = getSaledHouseNumSum(iday);
         long todayNum;
-        while (iday != endDay) {
-            iday = TimeUtil.beforeGivenDay(iday, -1);   //iday设置为之后一天
+        while (iday.compareTo(endDay) < 0) {
+            if (interval == HouseStockService.DAILY || interval == HouseStockService.WEEKLY)
+                iday = TimeUtil.beforeGivenday(iday, (-1) * interval);
+            else {
+                iday = TimeUtil.monthTailBeforeGivenday(iday, -1);
+            }
             todayNum = getSaledHouseNumSum(iday);
-            map.put(iday, todayNum - yesNum);
+            Map<String, Object> map = new HashMap<>();
+            map.put("date", TimeUtil.formatDate(iday));
+            map.put("dealNumSum", todayNum - yesNum);
+            list.add(map);
             yesNum = todayNum;
         }
-        return map;
+        return list;
     }
 }

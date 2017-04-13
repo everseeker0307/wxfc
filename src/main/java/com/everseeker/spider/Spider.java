@@ -51,7 +51,7 @@ public class Spider {
     private static final int pageSize = 15;  //每页显示数据
     private static final int spiderThreadNum = 3;
 
-    @Scheduled(cron = "07 12 02,19,23 * * *")
+//    @Scheduled(cron = "07 12 02,19,23 * * *")
     public void startSpider() {
         long start = System.currentTimeMillis();
         logger.info("spider start...");
@@ -91,7 +91,7 @@ public class Spider {
         logger.info("spider end! It costs time: " + (System.currentTimeMillis() - start)/ 1000 + "s");
     }
 
-    @Scheduled(cron = "03 03 03 * * *")
+//    @Scheduled(cron = "03 03 03 * * *")
     public void findMissedHouseStock() {
         Calendar yesterday = Calendar.getInstance();
         yesterday.add(Calendar.DAY_OF_MONTH, -1);

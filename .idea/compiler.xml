@@ -26,7 +26,7 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="wxfc" target="1.6" />
+      <module name="wxfc" target="1.8" />
     </bytecodeTargetLevel>
   </component>
 </project>

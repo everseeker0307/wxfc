@@ -6,8 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
-
 /**
  * Created by everseeker on 2017/4/4.
  */
@@ -27,10 +25,10 @@ public class IndexController {
         return houseStockService.getForsaleHouseNumSum(TimeUtil.jsdateTransferTomydate(givenday));
     }
 
-    @RequestMapping(value = "/getDailySaledHouseNumSum", method = RequestMethod.POST)
-    public Map<String, Long> getDailySaledHouseNumSum(String startDay, String endDay) throws Exception {
+    @RequestMapping(value = "/getIntervalSaledHouseNumSum", method = RequestMethod.POST)
+    public List<?> getIntervalSaledHouseNumSum(String startDay, String endDay, int interval) throws Exception {
         if (startDay == "" || startDay == null)
-            startDay = "20170307";
-        return houseStockService.getDailySaledHouseNumSum(startDay, TimeUtil.jsdateTransferTomydate(endDay));
+            startDay = "2017/03/08";
+        return houseStockService.getIntervalSaledHouseNumSum(TimeUtil.jsdateTransferTomydate(startDay), TimeUtil.jsdateTransferTomydate(endDay), interval);
     }
 }
