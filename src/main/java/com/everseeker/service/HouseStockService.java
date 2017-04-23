@@ -55,6 +55,21 @@ public class HouseStockService {
         return getPeriodDealDetails(yesterday, today);
     }
 
+    public List<?> getPeriodDetails(String givenday, int daysInterval) {
+        if (daysInterval == 1)
+            return getTodayDealDetails(givenday);
+        else if (daysInterval == 7) {
+            String startDay = TimeUtil.firstDayBeforeGivenday(givenday, 1);
+            String endDay = TimeUtil.firstDayBeforeGivenday(givenday, -1);
+            return getPeriodDealDetails(startDay, endDay);
+        } else if (daysInterval == 30) {
+            String startDay = TimeUtil.monthTailBeforeGivenday(givenday, 1);
+            String endDay = TimeUtil.monthTailBeforeGivenday(givenday, 0);
+            return getPeriodDealDetails(startDay, endDay);
+        } else
+            return null;
+    }
+
     /**
      * 返回startDay(不含)到endDay(含)期间的成交详情
      * @param startDay
@@ -93,17 +108,8 @@ public class HouseStockService {
      */
     public List<?> getIntervalSaledHouseNumSum(String startDay, String endDay, int interval) {
         // 处理日期时间
-        if (startDay.compareTo(originDay) < 0)
-            startDay = originDay;
-        if (endDay.compareTo(TimeUtil.getBeijingDate(new Date())) > 0)
-            endDay = TimeUtil.getBeijingDate(new Date());
-        if (interval == HouseStockService.WEEKLY) {
-            startDay = TimeUtil.firstDayBeforeGivenday(startDay, -1);
-            endDay = TimeUtil.firstDayBeforeGivenday(endDay, 1);
-        } else if (interval == HouseStockService.MONTHLY) {
-            startDay = TimeUtil.monthTailBeforeGivenday(startDay, 0);
-            endDay = TimeUtil.monthTailBeforeGivenday(endDay, 1);
-        }
+        startDay = startDay(startDay, interval);
+        endDay = endDay(endDay, interval);
 
         // 根据日期查询数据库并返回
         List<Map<String, Object>> list = new ArrayList<>();
@@ -125,4 +131,89 @@ public class HouseStockService {
         }
         return list;
     }
+
+    private long getForsaleZhuzhaiNum(String givenday) {
+        return houseStockMapper.getForsaleZhuzhaiNum(givenday);
+    }
+
+    /**
+     * 返回从startDay(含)到endDay(含)期间的住宅楼盘库存量
+     * @param startDay
+     * @param endDay
+     * @Param interval: 表示时间间隔，1: 每日统计; 7: 每周日统计; 30: 每月末统计
+     * @return
+     */
+    public List<?> getForsaleZhuzhaiNum(String startDay, String endDay, int interval) {
+        // 处理日期时间
+        startDay = startDay(startDay, interval);
+        endDay = endDay(endDay, interval);
+        List<Map<String, Object>> list = new ArrayList<>();
+        String iday = startDay;
+        long zznum;
+        while (iday.compareTo(endDay) <= 0) {
+            zznum = getForsaleZhuzhaiNum(iday);
+            Map<String, Object> map = new HashMap<>();
+            map.put("date", TimeUtil.formatDate(iday));
+            map.put("zzNumSum", zznum);
+            list.add(map);
+            if (interval == HouseStockService.DAILY || interval == HouseStockService.WEEKLY)
+                iday = TimeUtil.beforeGivenday(iday, (-1) * interval);
+            else {
+                iday = TimeUtil.monthTailBeforeGivenday(iday, -1);
+            }
+        }
+        return list;
+    }
+
+    /**
+     * 返回从startDay(含)到endDay(含)期间的商业+办公+公寓等楼盘库存量
+     * @param startDay
+     * @param endDay
+     * @Param interval: 表示时间间隔，1: 每日统计; 7: 每周日统计; 30: 每月末统计
+     * @return
+     */
+    public List<?> getForsaleBOANum(String startDay, String endDay, int interval) {
+        // 处理日期时间
+        startDay = startDay(startDay, interval);
+        endDay = endDay(endDay, interval);
+        List<Map<String, Object>> list = new ArrayList<>();
+        String iday = startDay;
+        long zznum;
+        long totalnum;
+        while (iday.compareTo(endDay) <= 0) {
+            zznum = getForsaleZhuzhaiNum(iday);
+            Map<String, Object> map = new HashMap<>();
+            map.put("date", TimeUtil.formatDate(iday));
+            totalnum = getForsaleHouseNumSum(iday);
+            map.put("boaNumSum", totalnum - zznum);
+            list.add(map);
+            if (interval == HouseStockService.DAILY || interval == HouseStockService.WEEKLY)
+                iday = TimeUtil.beforeGivenday(iday, (-1) * interval);
+            else {
+                iday = TimeUtil.monthTailBeforeGivenday(iday, -1);
+            }
+        }
+        return list;
+    }
+
+    private String startDay(String startDay, int interval) {
+        if (startDay.compareTo(originDay) < 0)
+            startDay = originDay;
+        if (interval == HouseStockService.WEEKLY)
+            startDay = TimeUtil.firstDayBeforeGivenday(startDay, -1);
+        else if (interval == HouseStockService.MONTHLY)
+            startDay = TimeUtil.monthTailBeforeGivenday(startDay, 0);
+        return startDay;
+    }
+
+    private String endDay(String endDay, int interval) {
+        if (endDay.compareTo(TimeUtil.getBeijingDate(new Date())) > 0)
+            endDay = TimeUtil.getBeijingDate(new Date());
+        if (interval == HouseStockService.WEEKLY)
+            endDay = TimeUtil.firstDayBeforeGivenday(endDay, 1);
+        else if (interval == HouseStockService.MONTHLY)
+            endDay = TimeUtil.monthTailBeforeGivenday(endDay, 1);
+        return endDay;
+    }
+
 }

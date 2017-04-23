@@ -15,11 +15,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.config.IntervalTask;
 import org.springframework.stereotype.Component;
 import sun.security.provider.ConfigFile;
 
+import javax.rmi.CORBA.Tie;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.sql.Time;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -51,7 +55,7 @@ public class Spider {
     private static final int pageSize = 15;  //每页显示数据
     private static final int spiderThreadNum = 3;
 
-//    @Scheduled(cron = "07 12 02,19,23 * * *")
+//    @Scheduled(cron = "23 12 01,22 * * *")
     public void startSpider() {
         long start = System.currentTimeMillis();
         logger.info("spider start...");
@@ -91,7 +95,7 @@ public class Spider {
         logger.info("spider end! It costs time: " + (System.currentTimeMillis() - start)/ 1000 + "s");
     }
 
-//    @Scheduled(cron = "03 03 03 * * *")
+//    @Scheduled(cron = "04 04 02 * * *")
     public void findMissedHouseStock() {
         Calendar yesterday = Calendar.getInstance();
         yesterday.add(Calendar.DAY_OF_MONTH, -1);
@@ -111,12 +115,61 @@ public class Spider {
         }
     }
 
+//    @Scheduled(cron = "0 45 01 * * *")
+    public void checkHouseTypeNum() {
+        List<HouseInfo> allHouseInfo = houseInfoService.getAllHouseInfo();
+        if (allHouseInfo != null) {
+            allHouseInfo.forEach(this::checkSingleHouseTypeNum);
+        }
+    }
+
+    /**
+     * 检查是否需要更新houseinfo中关于houseNum等字段的信息
+     * @param houseInfo
+     */
+    public void checkSingleHouseTypeNum(HouseInfo houseInfo) {
+        if (houseInfo != null && houseInfo.getHouseNum() == 0 && houseInfo.getBusiNum() == 0 &&
+                houseInfo.getOfficeNum() == 0 && houseInfo.getCarportNum() == 0 &&
+                houseInfo.getPlantNum() == 0 && houseInfo.getOtherNum() == 0 &&
+                houseInfo.getApartNum() == 0) {
+            String urlId = houseInfo.getHouseUrlId();
+            messageProducer.send("http://www.wxhouse.com:9097/wwzs/queryFwmxInfo.action?tplLpxx.id=" + urlId);
+        }
+    }
+
+    public void updateSingleHouseTypeNum(String url) {
+        List<Integer> list = getHousetypeNums(url);
+        String urlId = url.substring(url.indexOf("=") + 1);
+        HouseInfo houseInfo = houseInfoService.getHouseInfoByHouseUrlId(urlId);
+        if (list != null) {
+            houseInfo.setHouseNum(list.get(0));
+            houseInfo.setBusiNum(list.get(1));
+            houseInfo.setOfficeNum(list.get(2));
+            houseInfo.setCarportNum(list.get(3));
+            houseInfo.setPlantNum(list.get(4));
+            houseInfo.setOtherNum(list.get(5));
+            houseInfo.setApartNum(list.get(6));
+            houseInfo.setLowHouseNum(list.get(7));
+            houseInfo.setMultiHouseNum(list.get(8));
+            houseInfo.setSmallhighHouseNum(list.get(9));
+            houseInfo.setHighHouseNum(list.get(10));
+            houseInfo.setVillaNum(list.get(11));
+            houseInfoService.updateHouseInfoTypeNums(houseInfo);
+        }
+    }
+
+    /**
+     * 获得总楼盘数
+     * @param url
+     * @return
+     */
     public int getTotalPageNum(String url) {
         int reconnection = 0;
         while (true) {
             try {
                 Document doc = Jsoup.connect(url)
                         .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36")
+                        .timeout(30000)
                         .get();
                 Element pagination = doc.getElementById("pagination").parent();
                 Elements inputs = pagination.getElementsByTag("input");
@@ -134,6 +187,11 @@ public class Spider {
         }
     }
 
+    /**
+     * 根据页面发送post请求，获得每页的15个楼盘链接
+     * @param url
+     * @param currentPage
+     */
     public void postPage(String url, int currentPage) {
         int reconnection = 0;
         while (true) {
@@ -142,12 +200,16 @@ public class Spider {
                         .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36")
                         .data("page.pageSize", String.valueOf(pageSize))
                         .data("page.currentPageNo", String.valueOf(currentPage))
+                        .timeout(30000)
                         .post();
                 analysisDocumentGainLinks(doc);
                 return;
             } catch (SocketTimeoutException socketTimeoutException) {
                 logger.warn(socketTimeoutException.toString() + ".    invoke method postPage error, url is: " + url + ", currentPage is: " + currentPage + ", recon = " + (++reconnection));
-                TimeUtil.sleep((reconnection < 100) ? 6000 : 600000);
+                if (reconnection < 5)
+                    TimeUtil.sleep(6000);
+                else
+                    return;
             } catch (IOException e) {
                 logger.error(e.toString() + ",  page=" + currentPage);
                 TimeUtil.sleep(60000);
@@ -155,23 +217,37 @@ public class Spider {
         }
     }
 
+    /**
+     * 分析每个具体的楼盘页面，提取出有用信息并加入数据库
+     * @param url
+     */
     public void getDetailPageAndSave(String url) {
         int reconnection = 0;
         while (true) {
             try {
                 Document doc = Jsoup.connect(url)
                         .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36")
+                        .timeout(30000)
                         .get();
                 Elements elements = doc.select("table.searchdiv");
                 String urlId = url.substring(url.indexOf("=") + 1);
-                if (houseInfoService.getHouseInfoByHouseUrlId(urlId) == null) {
+                HouseInfo houseInfo = houseInfoService.getHouseInfoByHouseUrlId(urlId);
+                // 1. 新增楼盘记录
+                if (houseInfo == null) {
                     houseInfoService.addHouseInfo(analysisDocumentGainHouseInfo(elements, urlId));
                 }
+                // 2. 更新住宅性质
+//                else
+//                    checkSingleHouseTypeNum(houseInfo);
+                // 3. 更新每日库存信息
                 houseStockService.addHouseStock(analysisDocumentGainHouseStock(elements, urlId));
                 return;
             } catch (SocketTimeoutException socketTimeoutException) {
                 logger.warn(socketTimeoutException.toString() + ".    invoke method getDetailPageAndSave error, url is: " + url + ", recon = " + (++reconnection));
-                TimeUtil.sleep((reconnection < 10) ? 6000 : 60000);
+                if (reconnection < 3)
+                    TimeUtil.sleep(3000);
+                else
+                    return;
             } catch (IOException e) {
                 logger.warn(e.toString() + ",  url=" + url);
                 TimeUtil.sleep(60000);
@@ -186,6 +262,12 @@ public class Spider {
         }
     }
 
+    /**
+     * 提取页面中的楼盘信息
+     * @param elements
+     * @param urlId
+     * @return
+     */
     public HouseInfo analysisDocumentGainHouseInfo(Elements elements, String urlId) {
         //提取楼盘信息
         Elements trsHouseInfo = elements.get(1).select("tr");
@@ -216,6 +298,12 @@ public class Spider {
         return houseInfo;
     }
 
+    /**
+     * 提取页面中的库存信息
+     * @param elements
+     * @param urlId
+     * @return
+     */
     public HouseStock analysisDocumentGainHouseStock(Elements elements, String urlId) {
         //提取每日库存信息
         HouseStock houseStock = new HouseStock();
@@ -228,6 +316,69 @@ public class Spider {
         houseStock.setLimitedHouseNum(Integer.valueOf((getTdText(trsHouseStock.get(3))).replace("套", "")));
         houseStock.setRecordDate(TimeUtil.getBeijingDate(new Date()));
         return houseStock;
+    }
+
+    /**
+     * 返回住宅、商业等具体数量, 具体数组为[houseNum, busiNum, officeNum, carportNum, plantNum, otherNum, apartNum, lowHouseNum, multiHouseNum, smallhighHouseNum, highHouseNum, villaNum]
+     * @param url
+     * @return
+     */
+    public List<Integer> getHousetypeNums(String url) {
+        String urlId = url.substring(url.indexOf("=") + 1);
+        HouseInfo houseInfo = houseInfoService.getHouseInfoByHouseUrlId(urlId);
+        if (houseInfo == null)
+            return null;
+        int totalHouseNum = houseInfo.getTotalHouseNum();
+        List<Integer> list = new ArrayList<>();
+        int totalType = 0;
+        for (int fwyt = 1; fwyt < 8; fwyt++) {
+            if (totalType == totalHouseNum) {
+                list.add(0);
+            } else {
+                int nm = getHousetypeNum(url, fwyt);
+                if (nm == -1)
+                    return null;
+                list.add(nm);
+                totalType += nm;
+            }
+        }
+        int zztotalType = 0;
+        for (int zzfwyt = 101; zzfwyt < 106; zzfwyt++) {
+            if (zztotalType == list.get(0)) {
+                list.add(0);
+            } else {
+                int nn = getHousetypeNum(url, zzfwyt);
+                if (nn == -1)
+                    return null;
+                list.add(nn);
+                zztotalType += nn;
+            }
+        }
+        return list;
+    }
+
+    public int getHousetypeNum(String url, int fwyt) {
+        int reconnection = 0;
+        while (true) {
+            try {
+                Document doc = Jsoup.connect(url)
+                        .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36")
+                        .data("wwzsYsfw.fwyt", String.valueOf(fwyt))
+                        .timeout(60000)
+                        .post();
+                Element element = doc.select("input#totalSize").first();
+                return Integer.valueOf(element.attr("value"));
+            } catch (SocketTimeoutException socketTimeoutException) {
+                logger.warn(socketTimeoutException.toString() + ".    invoke method getHousetypeNum error, url is: " + url + ", fwyt = " + fwyt + ", recon = " + (++reconnection));
+                if (reconnection < 3)
+                    TimeUtil.sleep(3000);
+                else
+                    return -1;
+            } catch (IOException e) {
+                logger.warn(e.toString() + ",  url=" + url);
+                TimeUtil.sleep(60000);
+            }
+        }
     }
 
     private static String getTdText(Element element) {

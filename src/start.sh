@@ -1,0 +1,1 @@
+java -jar ../target/wxfc.jar -Xmx2048m

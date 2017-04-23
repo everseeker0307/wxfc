@@ -94,4 +94,7 @@ public interface HouseStockMapper {
      */
     @Select("select sum(saledHouseNum) from housestock where recordDate=#{givenday}")
     Long getSaledHouseNumSum(String givenday);
+
+    @Select("select sum((h.houseNum/h.totalHouseNum) * s.forsaleHouseNum) as forSaleHouseNum from houseinfo h join housestock s on s.recordDate=#{givenday} and h.houseUrlId=s.houseUrlId")
+    Long getForsaleZhuzhaiNum(String givenday);
 }

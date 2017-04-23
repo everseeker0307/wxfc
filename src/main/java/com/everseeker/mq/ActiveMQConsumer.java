@@ -21,12 +21,17 @@ public class ActiveMQConsumer implements MessageConsumer {
      * 设置消费者，并发线程数为10
      * @param obj
      */
-    @JmsListener(destination = "house-url", concurrency="10")
+    @JmsListener(destination = "house-url", concurrency="15")
     public void receive(Object obj) {
         if (obj instanceof ActiveMQTextMessage) {
             ActiveMQTextMessage message = (ActiveMQTextMessage)obj;
             try {
-                spider.getDetailPageAndSave(message.getText());
+                if (message.getText().contains("queryFwmxInfo")) {
+                    spider.updateSingleHouseTypeNum(message.getText());
+                }
+                else if (message.getText().contains("queryLpxxInfo")) {
+                    spider.getDetailPageAndSave(message.getText());
+                }
                 TimeUtil.sleep(50);
             } catch (JMSException e) {
                 e.printStackTrace();

@@ -4,6 +4,9 @@ import com.everseeker.entity.HouseInfo;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
+
+import java.util.List;
 
 /**
  * Created by everseeker on 2017/3/2.
@@ -21,4 +24,11 @@ public interface HouseInfoMapper {
 
     @Select("SELECT COUNT(*) FROM houseinfo where createDate <= #{recordDate}")
     int getTotalHouseNum(String recordDate);
+
+    @Update("UPDATE houseinfo SET houseNum=#{houseNum}, busiNum=#{busiNum}, officeNum=#{officeNum}, carportNum=#{carportNum}, plantNum=#{plantNum}, otherNum=#{otherNum}, apartNum=#{apartNum}, " +
+            "lowHouseNum=#{lowHouseNum}, multiHouseNum=#{multiHouseNum}, smallhighHouseNum=#{smallhighHouseNum}, highHouseNum=#{highHouseNum}, villaNum=#{villaNum} WHERE houseUrlId=#{houseUrlId}")
+    void updateHouseInfoTypeNums(HouseInfo houseInfo);
+
+    @Select("SELECT * FROM houseinfo")
+    List<HouseInfo> getAllHouseInfo();
 }

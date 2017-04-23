@@ -29,6 +29,18 @@ public class HouseInfo implements Serializable {
     private String tenement;           //物业公司
     private int totalHouseNum;         //总套数
     private String createDate;
+    private int houseNum;       //住宅数量
+    private int busiNum;        //商业数量
+    private int officeNum;      //办公数量
+    private int carportNum;     //车库数量
+    private int plantNum;       //厂房仓库数量
+    private int otherNum;       //其他
+    private int apartNum;       //酒店式公寓
+    private int lowHouseNum;    //低层住宅
+    private int multiHouseNum;  //多层住宅
+    private int smallhighHouseNum;  //小高层住宅
+    private int highHouseNum;   //高层住宅
+    private int villaNum;       //别墅
 
     public long getId() {
         return id;
@@ -212,6 +224,106 @@ public class HouseInfo implements Serializable {
 
     public void setHoldLandLicence(String holdLandLicence) {
         this.holdLandLicence = holdLandLicence;
+    }
+
+    public int getApartNum() {
+        return apartNum;
+    }
+
+    public int getBusiNum() {
+        return busiNum;
+    }
+
+    public int getCarportNum() {
+        return carportNum;
+    }
+
+    public int getHighHouseNum() {
+        return highHouseNum;
+    }
+
+    public int getHouseNum() {
+        return houseNum;
+    }
+
+    public int getLowHouseNum() {
+        return lowHouseNum;
+    }
+
+    public int getMultiHouseNum() {
+        return multiHouseNum;
+    }
+
+    public int getOfficeNum() {
+        return officeNum;
+    }
+
+    public int getOtherNum() {
+        return otherNum;
+    }
+
+    public int getPlantNum() {
+        return plantNum;
+    }
+
+    public int getSmallhighHouseNum() {
+        return smallhighHouseNum;
+    }
+
+    public void setHouseNum(int houseNum) {
+        this.houseNum = houseNum;
+    }
+
+    public int getVillaNum() {
+        return villaNum;
+    }
+
+    public void setApartNum(int apartNum) {
+        this.apartNum = apartNum;
+    }
+
+    public void setHouseUrlId(String houseUrlId) {
+        this.houseUrlId = houseUrlId;
+    }
+
+    public void setBusiNum(int busiNum) {
+        this.busiNum = busiNum;
+    }
+
+    public void setCarportNum(int carportNum) {
+        this.carportNum = carportNum;
+    }
+
+    public void setHighHouseNum(int highHouseNum) {
+        this.highHouseNum = highHouseNum;
+    }
+
+    public void setLowHouseNum(int lowHouseNum) {
+        this.lowHouseNum = lowHouseNum;
+    }
+
+    public void setMultiHouseNum(int multiHouseNum) {
+        this.multiHouseNum = multiHouseNum;
+    }
+
+    public void setOfficeNum(int officeNum) {
+        this.officeNum = officeNum;
+    }
+
+    public void setOtherNum(int otherNum) {
+        this.otherNum = otherNum;
+    }
+
+    public void setPlantNum(int plantNum) {
+        this.plantNum = plantNum;
+    }
+
+    public void setSmallhighHouseNum(int smallhighHouseNum) {
+        this.smallhighHouseNum = smallhighHouseNum;
+    }
+
+    public void setVillaNum(int villaNum) {
+        this.villaNum = villaNum;
     }
 
     @Override
