@@ -15,14 +15,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.scheduling.config.IntervalTask;
 import org.springframework.stereotype.Component;
-import sun.security.provider.ConfigFile;
 
-import javax.rmi.CORBA.Tie;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
-import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -55,7 +51,7 @@ public class Spider {
     private static final int pageSize = 15;  //每页显示数据
     private static final int spiderThreadNum = 3;
 
-//    @Scheduled(cron = "23 12 01,22 * * *")
+    @Scheduled(cron = "23 12 01,22 * * *")
     public void startSpider() {
         long start = System.currentTimeMillis();
         logger.info("spider start...");
@@ -95,7 +91,7 @@ public class Spider {
         logger.info("spider end! It costs time: " + (System.currentTimeMillis() - start)/ 1000 + "s");
     }
 
-//    @Scheduled(cron = "04 04 02 * * *")
+    @Scheduled(cron = "04 20 00 * * *")
     public void findMissedHouseStock() {
         Calendar yesterday = Calendar.getInstance();
         yesterday.add(Calendar.DAY_OF_MONTH, -1);
@@ -115,7 +111,7 @@ public class Spider {
         }
     }
 
-//    @Scheduled(cron = "0 45 01 * * *")
+    @Scheduled(cron = "0 45 01 * * *")
     public void checkHouseTypeNum() {
         List<HouseInfo> allHouseInfo = houseInfoService.getAllHouseInfo();
         if (allHouseInfo != null) {

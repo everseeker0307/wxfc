@@ -59,8 +59,8 @@ public class HouseStockService {
         if (daysInterval == 1)
             return getTodayDealDetails(givenday);
         else if (daysInterval == 7) {
-            String startDay = TimeUtil.firstDayBeforeGivenday(givenday, 1);
             String endDay = TimeUtil.firstDayBeforeGivenday(givenday, -1);
+            String startDay = TimeUtil.beforeGivenday(endDay, 7);
             return getPeriodDealDetails(startDay, endDay);
         } else if (daysInterval == 30) {
             String startDay = TimeUtil.monthTailBeforeGivenday(givenday, 1);
@@ -110,6 +110,8 @@ public class HouseStockService {
         // 处理日期时间
         startDay = startDay(startDay, interval);
         endDay = endDay(endDay, interval);
+        System.out.println(startDay);
+        System.out.println(endDay);
 
         // 根据日期查询数据库并返回
         List<Map<String, Object>> list = new ArrayList<>();

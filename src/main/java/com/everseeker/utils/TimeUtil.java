@@ -64,10 +64,7 @@ public class TimeUtil {
         Calendar cal = Calendar.getInstance();
         cal.set(Integer.valueOf(givenday.substring(0, 4)), Integer.valueOf(givenday.substring(4, 6)) - 1, Integer.valueOf(givenday.substring(6, 8)));
         int offsetDay = (day > 0) ? (day - cal.get(Calendar.DAY_OF_WEEK) - 7) % 7 : (7 - day - cal.get(Calendar.DAY_OF_WEEK)) % 7;
-        if (offsetDay == 0 && day > 0)
-            cal.add(Calendar.DAY_OF_MONTH, -7);
-        else
-            cal.add(Calendar.DAY_OF_MONTH, offsetDay);
+        cal.add(Calendar.DAY_OF_MONTH, offsetDay);
         return getBeijingDate(cal.getTime());
     }
 
@@ -102,8 +99,4 @@ public class TimeUtil {
     public static String formatDate(String date) {
         return date.substring(0, 4) + "/" + date.substring(4, 6) + "/" + date.substring(6, 8);
     }
-
-//    public static void main(String[] args) {
-//        System.out.println(monthTailBeforeGivenday("20171231", 1));
-//    }
 }

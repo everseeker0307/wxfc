@@ -21,7 +21,7 @@ public class CORSConfig {
                 registry.addMapping("/**")
                         .allowedHeaders("*")
                         .allowedMethods("*")
-                        .allowedOrigins("http://localhost:8081");
+                        .allowedOrigins("*");
             }
         };
     }
