@@ -40,6 +40,12 @@ public interface HouseStockMapper {
     @Select("select * from housestock where recordDate = #{recordDate}")
     List<HouseStock> getHouseStocksByDate(String recordDate);
 
+//    @Select("select i.houseName, s.houseUrlId urlId, s.saledHouseNum saledNum from housestock s join houseinfo i on i.houseUrlId=s.houseUrlId and recordDate=#{recordDate}")
+    @Select("select t1.houseName,  t1.houseUrlId, t1.saledHouseNum endsaledNum, t0.saledHouseNum startsaledNum from " +
+            "(select s.saledHouseNum, s.houseUrlId, i.houseName from housestock s join houseinfo i on s.recordDate=#{endDay} and s.houseUrlId=i.houseUrlId) t1 " +
+            "left join (select saledHouseNum, houseUrlId from housestock where recordDate=#{startDay}) t0 on t1.houseUrlId = t0.houseUrlId")
+    List<Map<String, Object>> getSaledHouseNum(@Param("startDay") String startDay, @Param("endDay") String endDay);
+
     /**
      * 查找recordDate遗漏爬取的houseUrlId
      * @param recordDate

@@ -24,14 +24,14 @@ public class TimeUtil {
     }
 
     /**
-     * js传过来的日期格式为2017/4/10，转换成20170410
+     * js传过来的日期格式为2017/4/10或者2017-4-10，转换成20170410
      * @param jsdate
      * @return
      */
     public static String jsdateTransferTomydate(String jsdate) throws Exception {
         if (jsdate == "" || jsdate == null)
             throw new Exception("日期为空");
-        String[] year_month_date = jsdate.split("/");
+        String[] year_month_date = jsdate.contains("/") ? jsdate.split("/") : jsdate.split("-");
         String month = year_month_date[1];
         String date = year_month_date[2];
         if (month.length() == 1)

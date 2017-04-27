@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 
 import java.sql.Time;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Created by everseeker on 2017/3/3.
@@ -49,8 +51,6 @@ public class HouseStockService {
      * @return
      */
     public List<?> getTodayDealDetails(String today) {
-        System.out.println("service: getTodayDealDetails");
-        System.out.println("today = " + today);
         String yesterday = TimeUtil.beforeGivenday(today, 1);
         return getPeriodDealDetails(yesterday, today);
     }
@@ -78,7 +78,26 @@ public class HouseStockService {
      */
     public List<?> getPeriodDealDetails(String startDay, String endDay) {
         // 原先的做法为先取出所有楼盘的成交量，之后剔除为0的数据，采用list.removeIf(el -> ((BigDecimal)el.get("dealNum")).compareTo(BigDecimal.ZERO) == 0);
-        return houseStockMapper.getPeriodDealDetails(startDay, endDay);
+//        return houseStockMapper.getPeriodDealDetails(startDay, endDay);
+        System.out.println("startDay= " + startDay + ", endDay=" + endDay);
+        List<Map<String, Object>> list = houseStockMapper.getSaledHouseNum(startDay, endDay);
+        list.stream().filter(m -> m.get("startsaledNum") == null).forEach(s -> s.put("startsaledNum", 0));
+        List<Map<String, Object>> newlist = list.stream().filter(m -> !m.get("startsaledNum").equals(m.get("endsaledNum"))).collect(Collectors.toList());
+        Map<String, List<Map<String, Object>>> grouplist = newlist.stream().collect(Collectors.groupingBy(m -> (String)m.get("houseName")));
+        List<Map<String, Object>> retlist = new ArrayList<>();
+        for(Map.Entry<String, List<Map<String, Object>>> entry : grouplist.entrySet()) {
+            Map<String, Object> ret = new HashMap<>();
+            ret.put("houseName", entry.getKey());
+            int dealnum = 0;
+            for (Map<String, Object> map : entry.getValue()) {
+                dealnum += (Integer)map.get("endsaledNum") - (Integer)map.get("startsaledNum");
+            }
+            ret.put("dealNum", dealnum);
+            retlist.add(ret);
+        }
+        Collections.sort(retlist, (Comparator<Map<String, Object>>) (o1, o2) -> (Integer)o2.get("dealNum") - (Integer)o1.get("dealNum"));
+
+        return retlist;
     }
 
     /**
@@ -110,8 +129,6 @@ public class HouseStockService {
         // 处理日期时间
         startDay = startDay(startDay, interval);
         endDay = endDay(endDay, interval);
-        System.out.println(startDay);
-        System.out.println(endDay);
 
         // 根据日期查询数据库并返回
         List<Map<String, Object>> list = new ArrayList<>();
