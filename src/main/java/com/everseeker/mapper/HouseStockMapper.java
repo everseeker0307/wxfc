@@ -41,10 +41,15 @@ public interface HouseStockMapper {
     List<HouseStock> getHouseStocksByDate(String recordDate);
 
 //    @Select("select i.houseName, s.houseUrlId urlId, s.saledHouseNum saledNum from housestock s join houseinfo i on i.houseUrlId=s.houseUrlId and recordDate=#{recordDate}")
-    @Select("select t1.houseName,  t1.houseUrlId, t1.saledHouseNum endsaledNum, t0.saledHouseNum startsaledNum from " +
-            "(select s.saledHouseNum, s.houseUrlId, i.houseName from housestock s join houseinfo i on s.recordDate=#{endDay} and s.houseUrlId=i.houseUrlId) t1 " +
-            "left join (select saledHouseNum, houseUrlId from housestock where recordDate=#{startDay}) t0 on t1.houseUrlId = t0.houseUrlId")
-    List<Map<String, Object>> getSaledHouseNum(@Param("startDay") String startDay, @Param("endDay") String endDay);
+    @Select("<script>" +
+            "select t1.houseName,  t1.houseUrlId, t1.saledHouseNum endsaledNum, t0.saledHouseNum startsaledNum from " +
+            "(select s.saledHouseNum, s.houseUrlId, i.houseName from housestock s join houseinfo i on s.recordDate=#{endDay} and s.houseUrlId=i.houseUrlId " +
+            "<if test= 'region != \"不限\"'> " +
+                "and i.adminRegion=#{region}" +
+            "</if>" +
+            ") t1 left join (select saledHouseNum, houseUrlId from housestock where recordDate=#{startDay}) t0 on t1.houseUrlId = t0.houseUrlId" +
+            "</script>")
+    List<Map<String, Object>> getSaledHouseNum(@Param("startDay") String startDay, @Param("endDay") String endDay, @Param("region") String region);
 
     /**
      * 查找recordDate遗漏爬取的houseUrlId
@@ -90,17 +95,48 @@ public interface HouseStockMapper {
      * @param givenday
      * @return
      */
-    @Select("select sum(forsaleHouseNum) from housestock where recordDate=#{givenday}")
-    Long getForsaleHouseNumSum(String givenday);
+    @Select("<script>" +
+            "select sum(forsaleHouseNum) from housestock s join houseinfo i on s.recordDate=#{givenday} and s.houseUrlId=i.houseUrlId " +
+            "<if test= 'region != \"不限\"'>" +
+            "and i.adminRegion=#{region}" +
+            "</if>" +
+            "</script>")
+    Long getForsaleHouseNumSum(@Param("givenday") String givenday, @Param("region") String region);
 
     /**
      * 返回givenday那天已经售出的总量
      * @param givenday
      * @return
      */
-    @Select("select sum(saledHouseNum) from housestock where recordDate=#{givenday}")
-    Long getSaledHouseNumSum(String givenday);
+    @Select("<script>" +
+            "select sum(saledHouseNum) from housestock s join houseinfo i on s.recordDate=#{givenday} and s.houseUrlId=i.houseUrlId " +
+            "<if test= 'region != \"不限\"'>" +
+                "and i.adminRegion=#{region}" +
+            "</if>" +
+            "</script>")
+    Long getSaledHouseNumSum(@Param("givenday") String givenday, @Param("region") String region);
 
-    @Select("select sum((h.houseNum/h.totalHouseNum) * s.forsaleHouseNum) as forSaleHouseNum from houseinfo h join housestock s on s.recordDate=#{givenday} and h.houseUrlId=s.houseUrlId")
-    Long getForsaleZhuzhaiNum(String givenday);
+    @Select("<script>" +
+            "select sum((i.houseNum/i.totalHouseNum) * s.forsaleHouseNum) as forSaleHouseNum from houseinfo i join housestock s on s.recordDate=#{givenday} and i.houseUrlId=s.houseUrlId " +
+            "<if test= 'region != \"不限\"'>" +
+                "and i.adminRegion=#{region}" +
+            "</if>" +
+            "</script>")
+    Long getForsaleZhuzhaiNum(@Param("givenday") String givenday, @Param("region") String region);
+
+    @Select("<script>" +
+            "select sum((i.houseNum/i.totalHouseNum) * s.limitedHouseNum) as limitedHouseNum from houseinfo i join housestock s on s.recordDate=#{givenday} and i.houseUrlId=s.houseUrlId " +
+            "<if test= 'region != \"不限\"'>" +
+            "and i.adminRegion=#{region}" +
+            "</if>" +
+            "</script>")
+    Long getLimitedZhuzhaiNum(@Param("givenday") String givenday, @Param("region") String region);
+
+    @Select("<script>" +
+            "select sum(limitedHouseNum) from housestock s join houseinfo i on s.recordDate=#{givenday} and s.houseUrlId=i.houseUrlId " +
+            "<if test= 'region != \"不限\"'>" +
+            "and i.adminRegion=#{region}" +
+            "</if>" +
+            "</script>")
+    Long getlimitedHouseNumSum(@Param("givenday") String givenday, @Param("region") String region);
 }
