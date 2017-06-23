@@ -24,11 +24,11 @@ public class IndexController {
         return houseStockService.getPeriodDetails(TimeUtil.jsdateTransferTomydate(givenday), daysInterval, region);
     }
 
-//    @RequestMapping("/getForsaleHouseNumSum")
-//    public Long getForsaleHouseNumSum(@RequestParam("givenday") String givenday, String region) throws Exception {
-//        logger.info("invoke /getForsaleHouseNumSum, givenday=" + givenday + ", region=" + region);
-//        return houseStockService.getForsaleHouseNumSum(TimeUtil.jsdateTransferTomydate(givenday), region);
-//    }
+    @RequestMapping(value = "/getZhuzhaiPeriodDetails", method = RequestMethod.POST)
+    public List<?> getZhuzhaiPeriodDealDetails(String givenday, int daysInterval, String region) throws Exception {
+        logger.info("invoke /getZhuzhaiPeriodDetails, givenday=" + givenday + ", daysInterval=" + daysInterval + ", region=" + region);
+        return houseStockService.getZhuzhaiPeriodDetails(TimeUtil.jsdateTransferTomydate(givenday), daysInterval, region);
+    }
 
     @RequestMapping(value = "/getIntervalSaledHouseNumSum", method = RequestMethod.POST)
     public List<?> getIntervalSaledHouseNumSum(String startDay, String endDay, int interval, String region) throws Exception {
@@ -36,6 +36,14 @@ public class IndexController {
         if (startDay == "" || startDay == null)
             startDay = "2017/03/08";
         return houseStockService.getIntervalSaledHouseNumSum(TimeUtil.jsdateTransferTomydate(startDay), TimeUtil.jsdateTransferTomydate(endDay), interval, region);
+    }
+
+    @RequestMapping(value = "/getIntervalSaledZhuzhaiHouseNumSum", method = RequestMethod.POST)
+    public List<?> getIntervalSaledZhuzhaiHouseNumSum(String startDay, String endDay, int interval, String region) throws Exception {
+        logger.info("invoke /getIntervalSaledZhuzhaiHouseNumSum, startDay=" + startDay + ", endDay=" + endDay + ", interval=" + interval + ", region=" + region);
+        if (startDay == "" || startDay == null)
+            startDay = "2017/03/08";
+        return houseStockService.getIntervalSaledZhuzhaiHouseNumSum(TimeUtil.jsdateTransferTomydate(startDay), TimeUtil.jsdateTransferTomydate(endDay), interval, region);
     }
 
     @RequestMapping(value = "/getForsaleZhuzhaiNumSum", method = RequestMethod.POST)

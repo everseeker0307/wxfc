@@ -34,16 +34,15 @@ public interface HouseStockMapper {
 
     /**
      * 查找recordDate当天爬取的数据
-     * @param recordDate
+     * @param
      * @return
      */
-    @Select("select * from housestock where recordDate = #{recordDate}")
-    List<HouseStock> getHouseStocksByDate(String recordDate);
+    //@Select("select * from housestock where recordDate = #{recordDate}")
+    //List<HouseStock> getHouseStocksByDate(String recordDate);
 
-//    @Select("select i.houseName, s.houseUrlId urlId, s.saledHouseNum saledNum from housestock s join houseinfo i on i.houseUrlId=s.houseUrlId and recordDate=#{recordDate}")
     @Select("<script>" +
-            "select t1.houseName,  t1.houseUrlId, t1.saledHouseNum endsaledNum, t0.saledHouseNum startsaledNum from " +
-            "(select s.saledHouseNum, s.houseUrlId, i.houseName from housestock s join houseinfo i on s.recordDate=#{endDay} and s.houseUrlId=i.houseUrlId " +
+            "select t1.houseName,  t1.houseUrlId, t1.ratio, t1.saledHouseNum endsaledNum, t0.saledHouseNum startsaledNum from " +
+            "(select s.saledHouseNum, s.houseUrlId, i.houseName, i.houseNum/i.totalHouseNum as ratio from housestock s join houseinfo i on s.recordDate=#{endDay} and s.houseUrlId=i.houseUrlId " +
             "<if test= 'region != \"不限\"'> " +
                 "and i.adminRegion=#{region}" +
             "</if>" +
@@ -87,8 +86,8 @@ public interface HouseStockMapper {
      * @param endDay
      * @return
      */
-    @Select("select h.houseName, sum(s.r) as dealNum from houseinfo h join (select (r1 - r0) as r, t.houseUrlId from (select t1.saledHouseNum r1, t0.saledHouseNum r0, t1.houseUrlId from housestock t1 join housestock t0 on t1.houseUrlId = t0.houseUrlId and t1.recordDate=#{endDay} and t0.recordDate=#{startDay}) as t having r != 0) as s on s.houseUrlId=h.houseUrlId group by h.houseName order by dealNum desc")
-    List<Map<String, Object>> getPeriodDealDetails(@Param("startDay") String startDay, @Param("endDay") String endDay);
+    //@Select("select h.houseName, sum(s.r) as dealNum from houseinfo h join (select (r1 - r0) as r, t.houseUrlId from (select t1.saledHouseNum r1, t0.saledHouseNum r0, t1.houseUrlId from housestock t1 join housestock t0 on t1.houseUrlId = t0.houseUrlId and t1.recordDate=#{endDay} and t0.recordDate=#{startDay}) as t having r != 0) as s on s.houseUrlId=h.houseUrlId group by h.houseName order by dealNum desc")
+    //List<Map<String, Object>> getPeriodDealDetails(@Param("startDay") String startDay, @Param("endDay") String endDay);
 
     /**
      * 返回givenday当天的库存总量
@@ -104,7 +103,7 @@ public interface HouseStockMapper {
     Long getForsaleHouseNumSum(@Param("givenday") String givenday, @Param("region") String region);
 
     /**
-     * 返回givenday那天已经售出的总量
+     * 返回截止到givenday那天已经售出的总量
      * @param givenday
      * @return
      */
@@ -115,6 +114,20 @@ public interface HouseStockMapper {
             "</if>" +
             "</script>")
     Long getSaledHouseNumSum(@Param("givenday") String givenday, @Param("region") String region);
+
+    /**
+     * 返回截止到givenday那天已经售出的住宅楼盘总量(预估值，有一定偏差)
+     * @param givenday
+     * @param region
+     * @return
+     */
+    @Select("<script>" +
+            "select sum((i.houseNum/i.totalHouseNum) * s.saledHouseNum) from houseinfo i join housestock s on s.recordDate=#{givenday} and i.houseUrlId=s.houseUrlId " +
+            "<if test= 'region != \"不限\"'>" +
+                "and i.adminRegion=#{region}" +
+            "</if>" +
+            "</script>")
+    Long getSaledZhuzhaiHouseNumSum(@Param("givenday") String givenday, @Param("region") String region);
 
     @Select("<script>" +
             "select sum((i.houseNum/i.totalHouseNum) * s.forsaleHouseNum) as forSaleHouseNum from houseinfo i join housestock s on s.recordDate=#{givenday} and i.houseUrlId=s.houseUrlId " +

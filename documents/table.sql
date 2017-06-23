@@ -10,3 +10,10 @@ tenement varchar(128), totalHouseNum int, createDate varchar(10), UNIQUE(houseUr
 create table if not exists housestock(id int NOT NULL auto_increment primary key, houseUrlId varchar(16), totalHouseNum int, forsaleHouseNum int, saledHouseNum int,
 limitedHouseNum int, recordDate varchar(10));
 alter table housestock add unique index(houseUrlId, recordDate);
+alter table housestock add index (recordDate);
+
+select (r1 - r0) as r, t.houseUrlId  from (select t1.saledHouseNum r1, t0.saledHouseNum r0, t1.houseUrlId from housestock t1 join housestock t0 on t1.houseUrlId = t0.houseUrlId and t1.recordDate='20170402' and t0.recordDate='20170401') as t order by r desc;
+select h.houseName, sum(s.r) as dealNum from houseinfo h join (select (r1 - r0) as r, t.houseUrlId from (select t1.saledHouseNum r1, t0.saledHouseNum r0, t1.houseUrlId from housestock t1 join housestock t0 on t1.houseUrlId = t0.houseUrlId and t1.recordDate='20170401' and t0.recordDate='20170331') as t having r != 0) as s on s.houseUrlId=h.houseUrlId group by h.houseName order by dealNum desc;
+select sum(saledHouseNum) from housestock where recordDate='20170421';
+select sum(forsaleHouseNum) from housestock where recordDate='20170421';
+select sum(limitedHouseNum) from housestock where recordDate='20170327';

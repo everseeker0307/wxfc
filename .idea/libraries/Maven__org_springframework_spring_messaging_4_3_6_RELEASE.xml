@@ -8,6 +8,7 @@
     </JAVADOC>
     <SOURCES>
       <root url="jar://$MAVEN_REPOSITORY$/org/springframework/spring-messaging/4.3.6.RELEASE/spring-messaging-4.3.6.RELEASE-sources.jar!/" />
+      <root url="file://$APPLICATION_HOME_DIR$/bin" />
     </SOURCES>
   </library>
 </component>

@@ -6,9 +6,8 @@ import com.everseeker.utils.TimeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.sql.Time;
+import java.math.BigDecimal;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -78,6 +77,30 @@ public class HouseStockService {
     }
 
     /**
+     * 返回一段时间内的住宅成交详情
+     * @param givenday
+     * @param daysInterval
+     * @param region
+     * @return
+     */
+    public List<?> getZhuzhaiPeriodDetails(String givenday, int daysInterval, String region) {
+        if (daysInterval == 1) {
+            String yesterday = TimeUtil.beforeGivenday(givenday, 1);
+            return getZhuzhaiPeriodDealDetails(yesterday, givenday, region);
+        }
+        else if (daysInterval == 7) {
+            String endDay = TimeUtil.firstDayBeforeGivenday(givenday, -1);
+            String startDay = TimeUtil.beforeGivenday(endDay, 7);
+            return getZhuzhaiPeriodDealDetails(startDay, endDay, region);
+        } else if (daysInterval == 30) {
+            String startDay = TimeUtil.monthTailBeforeGivenday(givenday, 1);
+            String endDay = TimeUtil.monthTailBeforeGivenday(givenday, 0);
+            return getZhuzhaiPeriodDealDetails(startDay, endDay, region);
+        } else
+            return null;
+    }
+
+    /**
      * 返回startDay(不含)到endDay(含)期间的成交详情
      * @param startDay
      * @param endDay
@@ -93,6 +116,38 @@ public class HouseStockService {
         List<Map<String, Object>> newlist = list.stream().filter(m -> !m.get("startsaledNum").equals(m.get("endsaledNum"))).collect(Collectors.toList());
         Map<String, List<Map<String, Object>>> grouplist = newlist.stream().collect(Collectors.groupingBy(m -> (String)m.get("houseName")));
         List<Map<String, Object>> retlist = new ArrayList<>();
+        transferDetailList(grouplist, retlist);
+        Collections.sort(retlist, (Comparator<Map<String, Object>>) (o1, o2) -> (Integer)o2.get("dealNum") - (Integer)o1.get("dealNum"));
+
+        return retlist;
+    }
+
+    /**
+     * 返回startDay(不含)到endDay(含)期间的住宅成交详情
+     * @param startDay
+     * @param endDay
+     * @param region
+     * @return
+     */
+    public List<?> getZhuzhaiPeriodDealDetails(String startDay, String endDay, String region) {
+        System.out.println("startDay= " + startDay + ", endDay=" + endDay);
+        List<Map<String, Object>> list = houseStockMapper.getSaledHouseNum(startDay, endDay, region);
+        list.stream().filter(m -> m.get("startsaledNum") == null).forEach(s -> s.put("startsaledNum", 0));
+        List<Map<String, Object>> newlist = list.stream().filter(m -> !m.get("startsaledNum").equals(m.get("endsaledNum"))).collect(Collectors.toList());
+        newlist.stream().forEach(s -> {
+            s.put("endsaledNum", (int)((Integer)s.get("endsaledNum") * ((BigDecimal)s.get("ratio")).doubleValue()));
+            s.put("startsaledNum", (int)((Integer)s.get("startsaledNum") * ((BigDecimal)s.get("ratio")).doubleValue()));
+        });
+        List<Map<String, Object>> newlist2 = newlist.stream().filter(m -> !m.get("startsaledNum").equals(m.get("endsaledNum"))).collect(Collectors.toList());
+        Map<String, List<Map<String, Object>>> grouplist = newlist2.stream().collect(Collectors.groupingBy(m -> (String)m.get("houseName")));
+        List<Map<String, Object>> retlist = new ArrayList<>();
+        transferDetailList(grouplist, retlist);
+        Collections.sort(retlist, (Comparator<Map<String, Object>>) (o1, o2) -> (Integer)o2.get("dealNum") - (Integer)o1.get("dealNum"));
+
+        return retlist;
+    }
+
+    private void transferDetailList(Map<String, List<Map<String, Object>>> grouplist, List<Map<String, Object>> retlist) {
         for(Map.Entry<String, List<Map<String, Object>>> entry : grouplist.entrySet()) {
             Map<String, Object> ret = new HashMap<>();
             ret.put("houseName", entry.getKey());
@@ -103,9 +158,6 @@ public class HouseStockService {
             ret.put("dealNum", dealnum);
             retlist.add(ret);
         }
-        Collections.sort(retlist, (Comparator<Map<String, Object>>) (o1, o2) -> (Integer)o2.get("dealNum") - (Integer)o1.get("dealNum"));
-
-        return retlist;
     }
 
     /**
@@ -134,8 +186,18 @@ public class HouseStockService {
      * @param region:区域
      * @return
      */
-    public Long getSaledHouseNumSum(String givenday, String region) {
+    private Long getSaledHouseNumSum(String givenday, String region) {
         return houseStockMapper.getSaledHouseNumSum(givenday, region);
+    }
+
+    /**
+     * 返回截止到givenday的住宅售出数
+     * @param givenday
+     * @param region
+     * @return
+     */
+    private Long getSaledZhuzhaiHouseNumSum(String givenday, String region) {
+        return houseStockMapper.getSaledZhuzhaiHouseNumSum(givenday, region);
     }
 
     /**
@@ -168,6 +230,45 @@ public class HouseStockService {
                 iday = TimeUtil.monthTailBeforeGivenday(iday, -1);
             }
             todayNum = getSaledHouseNumSum(iday, region);
+            Map<String, Object> map = new HashMap<>();
+            map.put("date", TimeUtil.formatDate(iday));
+            map.put("dealNumSum", todayNum - yesNum);
+            list.add(map);
+            yesNum = todayNum;
+        }
+        return list;
+    }
+
+    /**
+     * 返回从startDay(不含)到endDay(含)期间的住宅成交量
+     * @param startDay
+     * @param endDay
+     * @Param interval: 表示时间间隔，1: 每日统计; 7: 每周统计; 30: 每月统计
+     * @Param region: 区域，比如滨湖区等
+     * @return
+     */
+    public List<?> getIntervalSaledZhuzhaiHouseNumSum(String startDay, String endDay, int interval, String region) {
+        // 处理日期时间
+        startDay = startDay(startDay, interval);
+        endDay = endDay(endDay, interval);
+        if (interval == 1) {
+            startDay = TimeUtil.beforeGivenday(endDay, 12);
+            if (startDay.compareTo(originDay) < 0)
+                startDay = originDay;
+        }
+
+        // 根据日期查询数据库并返回
+        List<Map<String, Object>> list = new ArrayList<>();
+        String iday = startDay;
+        long yesNum = getSaledZhuzhaiHouseNumSum(iday, region);
+        long todayNum;
+        while (iday.compareTo(endDay) < 0) {
+            if (interval == HouseStockService.DAILY || interval == HouseStockService.WEEKLY)
+                iday = TimeUtil.beforeGivenday(iday, (-1) * interval);
+            else {
+                iday = TimeUtil.monthTailBeforeGivenday(iday, -1);
+            }
+            todayNum = getSaledZhuzhaiHouseNumSum(iday, region);
             Map<String, Object> map = new HashMap<>();
             map.put("date", TimeUtil.formatDate(iday));
             map.put("dealNumSum", todayNum - yesNum);
