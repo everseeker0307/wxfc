@@ -25,7 +25,7 @@ public class IndexController {
     }
 
     @RequestMapping(value = "/getZhuzhaiPeriodDetails", method = RequestMethod.POST)
-    public List<?> getZhuzhaiPeriodDealDetails(String givenday, int daysInterval, String region) throws Exception {
+    public List<?> getZhuzhaiPeriodDealDetails(String givenday, Integer daysInterval, String region) throws Exception {
         logger.info("invoke /getZhuzhaiPeriodDetails, givenday=" + givenday + ", daysInterval=" + daysInterval + ", region=" + region);
         return houseStockService.getZhuzhaiPeriodDetails(TimeUtil.jsdateTransferTomydate(givenday), daysInterval, region);
     }

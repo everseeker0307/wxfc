@@ -15,19 +15,19 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Controller
 public class HouseInfoController {
-    @Autowired
-    private HouseInfoService houseInfoService;
-
-    @ResponseBody
-    @RequestMapping("/")
-    public String getIndex() {
-        return "index";
-    }
-
-    @RequestMapping("/houseinfo/{urlId}")
-    public String getHouseInfoById(@PathVariable("urlId") String urlId, Model model) {
-        HouseInfo houseInfo = houseInfoService.getHouseInfoByHouseUrlId(urlId);
-        model.addAttribute("houseInfo", houseInfo);
-        return "houseinfo";
-    }
+//    @Autowired
+//    private HouseInfoService houseInfoService;
+//
+//    @ResponseBody
+//    @RequestMapping("/")
+//    public String getIndex() {
+//        return "index";
+//    }
+//
+//    @RequestMapping("/houseinfo/{urlId}")
+//    public String getHouseInfoById(@PathVariable("urlId") String urlId, Model model) {
+//        HouseInfo houseInfo = houseInfoService.getHouseInfoByHouseUrlId(urlId);
+//        model.addAttribute("houseInfo", houseInfo);
+//        return "houseinfo";
+//    }
 }

@@ -4,6 +4,8 @@ import com.everseeker.entity.HouseStock;
 import com.everseeker.mapper.HouseStockMapper;
 import com.everseeker.utils.TimeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -14,6 +16,7 @@ import java.util.stream.Collectors;
  * Created by everseeker on 2017/3/3.
  */
 @Service
+@CacheConfig(cacheNames = "wxfc")
 public class HouseStockService {
     private static final String originDay = "20170308";
 
@@ -61,6 +64,8 @@ public class HouseStockService {
      * @param region
      * @return
      */
+
+    @Cacheable(key = "'getPeriodDetails:' + #givenday + ':' + #daysInterval + ':' + #region")
     public List<?> getPeriodDetails(String givenday, int daysInterval, String region) {
         if (daysInterval == 1)
             return getTodayDealDetails(givenday, region);
@@ -83,6 +88,7 @@ public class HouseStockService {
      * @param region
      * @return
      */
+    @Cacheable(key = "'getZhuzhaiPeriodDetails:' + #givenday + ':' + #daysInterval + ':' + #region")
     public List<?> getZhuzhaiPeriodDetails(String givenday, int daysInterval, String region) {
         if (daysInterval == 1) {
             String yesterday = TimeUtil.beforeGivenday(givenday, 1);
@@ -110,7 +116,6 @@ public class HouseStockService {
     public List<?> getPeriodDealDetails(String startDay, String endDay, String region) {
         // 原先的做法为先取出所有楼盘的成交量，之后剔除为0的数据，采用list.removeIf(el -> ((BigDecimal)el.get("dealNum")).compareTo(BigDecimal.ZERO) == 0);
         // return houseStockMapper.getPeriodDealDetails(startDay, endDay);
-        System.out.println("startDay= " + startDay + ", endDay=" + endDay);
         List<Map<String, Object>> list = houseStockMapper.getSaledHouseNum(startDay, endDay, region);
         list.stream().filter(m -> m.get("startsaledNum") == null).forEach(s -> s.put("startsaledNum", 0));
         List<Map<String, Object>> newlist = list.stream().filter(m -> !m.get("startsaledNum").equals(m.get("endsaledNum"))).collect(Collectors.toList());
@@ -130,7 +135,6 @@ public class HouseStockService {
      * @return
      */
     public List<?> getZhuzhaiPeriodDealDetails(String startDay, String endDay, String region) {
-        System.out.println("startDay= " + startDay + ", endDay=" + endDay);
         List<Map<String, Object>> list = houseStockMapper.getSaledHouseNum(startDay, endDay, region);
         list.stream().filter(m -> m.get("startsaledNum") == null).forEach(s -> s.put("startsaledNum", 0));
         List<Map<String, Object>> newlist = list.stream().filter(m -> !m.get("startsaledNum").equals(m.get("endsaledNum"))).collect(Collectors.toList());
@@ -208,6 +212,7 @@ public class HouseStockService {
      * @Param region: 区域，比如滨湖区等
      * @return
      */
+    @Cacheable(key = "'getIntervalSaledHouseNumSum:' + #startDay + ':' + #endDay + ':' + #interval + ':' + #region")
     public List<?> getIntervalSaledHouseNumSum(String startDay, String endDay, int interval, String region) {
         // 处理日期时间
         startDay = startDay(startDay, interval);
@@ -247,6 +252,7 @@ public class HouseStockService {
      * @Param region: 区域，比如滨湖区等
      * @return
      */
+    @Cacheable(key = "'getIntervalSaledZhuzhaiHouseNumSum:' + #startDay + ':' + #endDay + ':' + #interval + ':' + #region")
     public List<?> getIntervalSaledZhuzhaiHouseNumSum(String startDay, String endDay, int interval, String region) {
         // 处理日期时间
         startDay = startDay(startDay, interval);
@@ -294,6 +300,7 @@ public class HouseStockService {
      * @Param region: 区域
      * @return
      */
+    @Cacheable(key = "'getForsaleZhuzhaiNum:' + #startDay + ':' + #endDay + ':' + #interval + ':' + #region")
     public List<?> getForsaleZhuzhaiNum(String startDay, String endDay, int interval, String region) {
         // 处理日期时间
         startDay = startDay(startDay, interval);
@@ -324,6 +331,7 @@ public class HouseStockService {
      * @param region
      * @return
      */
+    @Cacheable(key = "'getLimitedZhuzhaiNum:' + #startDay + ':' + #endDay + ':' + #interval + ':' + #region")
     public List<?> getLimitedZhuzhaiNum(String startDay, String endDay, int interval, String region) {
         // 处理日期时间
         startDay = startDay(startDay, interval);
@@ -354,6 +362,7 @@ public class HouseStockService {
      * @Param region: 区域
      * @return
      */
+    @Cacheable(key = "'getForsaleBOANum:' + #startDay + ':' + #endDay + ':' + #interval + ':' + #region")
     public List<?> getForsaleBOANum(String startDay, String endDay, int interval, String region) {
         // 处理日期时间
         startDay = startDay(startDay, interval);
@@ -386,6 +395,7 @@ public class HouseStockService {
      * @param region
      * @return
      */
+    @Cacheable(key = "'getLimitedBOANum:' + #startDay + ':' + #endDay + ':' + #interval + ':' + #region")
     public List<?> getLimitedBOANum(String startDay, String endDay, int interval, String region) {
         // 处理日期时间
         startDay = startDay(startDay, interval);
